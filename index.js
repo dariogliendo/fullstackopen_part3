@@ -1,27 +1,28 @@
 const express = require('express')
 
 const app = express()
+app.use(express.json())
 const PORT = 8001
 
 let data = [
-  { 
+  {
     "id": 1,
-    "name": "Arto Hellas", 
+    "name": "Arto Hellas",
     "number": "040-123456"
   },
-  { 
+  {
     "id": 2,
-    "name": "Ada Lovelace", 
+    "name": "Ada Lovelace",
     "number": "39-44-5323523"
   },
-  { 
+  {
     "id": 3,
-    "name": "Dan Abramov", 
+    "name": "Dan Abramov",
     "number": "12-43-234345"
   },
-  { 
+  {
     "id": 4,
-    "name": "Mary Poppendieck", 
+    "name": "Mary Poppendieck",
     "number": "39-23-6423122"
   }
 ]
@@ -38,6 +39,18 @@ app.get('/api/persons/:id', (req, res) => {
 
 app.get('/info', (req, res) => {
   res.send(`Phonebook has information for ${data.length} people.<br/>${new Date()}`)
+})
+
+app.post('/api/persons', (req, res) => {
+  if (!req.body.name || !req.body.number) return res.status(400).json({error: "Request requirements not met"})
+  if (data.some(x => x.name === req.body.name)) return res.status(400).json({error: 'Name must be unique'})
+  const newPerson = {
+    name: req.body.name,
+    number: req.body.number,
+    id: Math.floor(Math.random() * 100000000)
+  }
+  data.push(newPerson)
+  res.status(200).send(newPerson)
 })
 
 app.delete('/api/persons/:id', (req, res) => {
