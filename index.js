@@ -74,7 +74,7 @@ app.put('/api/persons/:id', (req, res, next) => {
     name: req.body.name,
     number: req.body.number
   }
-  Person.findByIdAndUpdate(req.params.id, person, {new: true})
+  Person.findByIdAndUpdate(req.params.id, person, {new: true, runValidators: true})
     .then(person => {
       res.send(person)
     }).catch(error => next(error))
@@ -82,8 +82,11 @@ app.put('/api/persons/:id', (req, res, next) => {
 
 app.use((error, req, res, next) => {
   console.log(error)
-  if (error.name === 'CastError') {
+  if (error.name === 'CastError' || error.name === 'ValidationError') {
     return res.status(400).json({ error: error })
+  }
+  if (error instanceof Error) {
+    return res.status(400).json({error: {message: error.message}})
   }
 
   next(error)
