@@ -26,11 +26,10 @@ app.get('/api/persons', (req, res, next) => {
     .then(persons => {
       res.status(200).send(persons)
     })
-    .catch(error => next(error) )
+    .catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (req, res, next) => {
-  if (!req.params.id) return res.status(500).json({ error: "Must provide a valid ID to use this endpoint" })
   Person.findById(req.params.id)
     .then(person => {
       if (!person) return res.status(404).end()
@@ -48,7 +47,7 @@ app.get('/info', (req, res, next) => {
 })
 
 app.post('/api/persons', (req, res, next) => {
-  if (!req.body || !req.body.name || !req.body.number) return res.status(500).json({ error: 'Request requirements not met' })
+  if (!req.body || !req.body.name || !req.body.number) next(new Error('Request requirements not met'))
   const newPerson = new Person({
     name: req.body.name,
     number: req.body.number
@@ -62,7 +61,6 @@ app.post('/api/persons', (req, res, next) => {
 })
 
 app.delete('/api/persons/:id', (req, res, next) => {
-  if (!req.params.id) return res.status(500).json({error: "Must provide a valid ID to use this endpoint"})
   Person.findByIdAndRemove(req.params.id)
     .then(result => {
       res.status(204).end()
@@ -70,10 +68,22 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
+app.put('/api/persons/:id', (req, res, next) => {
+  if (!req.body.name && !req.body.number) return next(new Error("No data to update has been provided"))
+  const person = {
+    name: req.body.name,
+    number: req.body.number
+  }
+  Person.findByIdAndUpdate(req.params.id, person, {new: true})
+    .then(person => {
+      res.send(person)
+    }).catch(error => next(error))
+})
+
 app.use((error, req, res, next) => {
   console.log(error)
   if (error.name === 'CastError') {
-    return res.status(400).json({error: error})
+    return res.status(400).json({ error: error })
   }
 
   next(error)
