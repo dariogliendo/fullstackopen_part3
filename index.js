@@ -20,43 +20,34 @@ app.use(cors())
 app.use(express.static('dist'))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-app.get('/api/persons', (req, res) => {
+app.get('/api/persons', (req, res, next) => {
   const filter = req.query || {}
   Person.find(filter)
     .then(persons => {
       res.status(200).send(persons)
     })
-    .catch(error => {
-      res.status(500).json({ error: error })
-    })
+    .catch(error => next(error) )
 })
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   if (!req.params.id) return res.status(500).json({ error: "Must provide a valid ID to use this endpoint" })
   Person.findById(req.params.id)
     .then(person => {
       if (!person) return res.status(404).end()
       res.status(200).send(person)
     })
-    .catch(error => {
-      res.status(500).json({ error: error })
-    })
+    .catch(error => next(error))
 })
 
-app.get('/info', (req, res) => {
+app.get('/info', (req, res, next) => {
   Person.count()
     .then(count => {
       res.send(`Phonebook has information for ${count} people.<br/>${new Date()}`)
     })
-    .catch(error => {
-      res.status(500).json({
-        message: 'Failed to get phonebook information',
-        error: error
-      })
-    })
+    .catch(error => next(error))
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   if (!req.body || !req.body.name || !req.body.number) return res.status(500).json({ error: 'Request requirements not met' })
   const newPerson = new Person({
     name: req.body.name,
@@ -67,23 +58,25 @@ app.post('/api/persons', (req, res) => {
     .then(result => {
       res.status(200).send(result)
     })
-    .catch(error => {
-      res.status(500).json({
-        message: 'Failed to create a new phonebook entry',
-        error: error
-      })
-    })
+    .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
   if (!req.params.id) return res.status(500).json({error: "Must provide a valid ID to use this endpoint"})
   Person.findByIdAndRemove(req.params.id)
     .then(result => {
       res.status(204).end()
     })
-    .catch(error => {
-      res.status(500).json({error: error})
-    })
+    .catch(error => next(error))
+})
+
+app.use((error, req, res, next) => {
+  console.log(error)
+  if (error.name === 'CastError') {
+    return res.status(400).json({error: error})
+  }
+
+  next(error)
 })
 
 mongoose.connect(MONGODB_URI)
